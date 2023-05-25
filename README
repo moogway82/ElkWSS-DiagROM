@@ -3,21 +3,21 @@ Going to try and make a simple Diag ROM in the vein of the ZX Spectrum/CPC Testi
 
 ## Tests
 
-### Basic CPU Test
+### 0. Basic CPU Test
 Just do some basic arithmetic operations and see if they work - this is a little silly as the CPU is unlikely to execute code if it’s faulty :)
 
-### Zero Page RAM Test
-Write all ones and then all zeros to whole of the Zero page RAM locations (&0000 - &0FF). It will stop at first failure and report the failed bits.
+### 1. Zero Page RAM Test
+Write all ones and then all zeros to whole of the Zero page RAM locations (&0000 - &0FF). It will stop at first failure and report only lowest bit failed.
 Once this has passed then we can use Zero page instructions (I think this is helpful to use 16-bit addresses?)
 
-###  Stack RAM Test
-Write to all the stack.
+### 2. Stack RAM Test
+Write to all the stack. Failure code only shows the lowest failed bit.
 Once this is passed we can use Subroutines
 
-### Full Memory Test
+### 3. Full Memory Test
 Write & Read back whole memory from 0x200 - 0x7FFF
 
-### Interrupt tests
+### 4. Interrupt tests
 Not sure, maybe enable one at a time and see if we can get them to interrupt the CPU? Will need to set up a ISR
 
 
@@ -36,7 +36,7 @@ Each error code is 2 hex nibbles - 2x 4-bit codes. ‘0’ is a short flash/beep
 ### Error codes:
 0x = Failed CPU Test (maybe x is the operations that failed?)
 
-10 = 0000 0000 = s-s-s-s s-s-s-s = Failed Zero Page RAM Test, bit 0 wrong
+10 = 0000 0000 = s-s-s-l s-s-s-s = Failed Zero Page RAM Test, bit 0 wrong
 11 = Failed Zero Page RAM Test, bit 1 wrong
 12 = Failed Zero Page RAM Test, bit 2 wrong
 13 = Failed Zero Page RAM Test, bit 3 wrong
@@ -45,5 +45,7 @@ Each error code is 2 hex nibbles - 2x 4-bit codes. ‘0’ is a short flash/beep
 16 = Failed Zero Page RAM Test, bit 6 wrong
 17 = Failed Zero Page RAM Test, bit 7 wrong
 
-2x = Failed Stack RAM Test, bit 
+2x = Failed Stack RAM Test: x = bit (ie, 26 = Stack Fail, bit 6 wrong)
+
+3x = 
 
