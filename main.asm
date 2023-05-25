@@ -4,7 +4,8 @@
 ; An Acorn Electron Diagnostics ROM by Chris Jamieson
 ; ------------------------------------------------------------
 
-;#define TestRAMFailure #$20 	; Bit 6 failed
+;#define TestCPUFailure #50 			; Dummy value to compare to Register bits
+; #define TestRAMFailure #%10000000 	; Dummy bits failed
 
 #include "macros.inc"
 
@@ -81,7 +82,11 @@ RESET:
 	TAY
 	TYA 
 	CMP 	#$55  		; Z = 1
+#ifdef TestCPUFailure
+	CMP 	TestCPUFailure
+#endif
 	BNE 	CPU_ERROR 	; Z should be 1
+
 	JMP 	ZP_TEST 
 
 CPU_ERROR:
