@@ -4,6 +4,8 @@
 ; An Acorn Electron Diagnostics ROM by Chris Jamieson
 ; ------------------------------------------------------------
 
+;#define TestRAMFailure #$20 	; Bit 6 failed
+
 #include "macros.inc"
 
 * =	$F000
@@ -41,22 +43,11 @@ RESET:
 	LDA 	#$30
 	STA 	$FE03
 
-; * Set Pallette Regs
-;
-; &FE08 X B1 X B0 X G1 X X
-; &FE09 X X X G0 X R1 X R0
-;
-; RGB0 = 111
-; RGB1 = 000
-; ...therefore...
-; &FE08 X 0 X 1 X 0 X X
-; &FE09 X X X 1 X 0 X 1
-	LDA 	#%00010000
-	STA 	$FE08
-	LDA 	#%00010001
-	STA 	$FE09
+	SETSCREEN_BLACK()
 
+; ------------------------------------------------------------
 ; 0. Test CPU
+; ------------------------------------------------------------
 ; 
 ; 	Testing Flags
 	LDA 	#0 			 
@@ -94,8 +85,8 @@ RESET:
 	JMP 	ZP_TEST 
 
 CPU_ERROR:
-; Just 8 short flashes
-	LDA 	#$8
+; Just 4 short flashes followed by another 4 short flahses
+	LDA 	#$4
 FLASH_SCREEN_ERR:
 	SETSCREEN_BLACK()
 	DELAY(#$03)	
@@ -105,15 +96,176 @@ FLASH_SCREEN_ERR:
 	SBC 	#1
 	BNE 	FLASH_SCREEN_ERR:
 	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	DELAY(#$03)	
+	LDA 	#$4
+FLASH_SCREEN_ERR2:
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	SEC
+	SBC 	#1
+	BNE 	FLASH_SCREEN_ERR2:
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	DELAY(#$03)	
 	JMP 	HALT
 
+; ------------------------------------------------------------
 ; 1. Test ZP RAM
+; ------------------------------------------------------------
 ;
 ZP_TEST:
-	LDA 	#$A5
-	STA 	$0
-	CMP 	$0
-	BNE 	ZP_ERROR
+	LDY 	#$FF  			; Current test pattern
+	TYA
+ZP_TEST_LOOP:
+	LDX 	#0
+ZP_FILL_LOOP:
+	STA 	0, X
+	INX
+	BNE 	ZP_FILL_LOOP
+ZP_READ_LOOP:
+	EOR 	0, X
+#ifdef TestRAMFailure
+	LDA 	#0
+	EOR 	TestRAMFailure
+#endif
+	BNE  	ZP_ERROR
+	TYA 					; Put test pattern back into A
+	INX
+	BNE 	ZP_READ_LOOP  	; Keep testing until we wrap around back to 00 again
+	CPY 	#0 				; Are we using 00 as pattern or FF?
+	BEQ 	ZP_TEST_FINISH_JMP 	; 00, then we're done
+	LDY 	#$00 			; No FF, so now do 00 and start again
+	TYA
+	JMP 	ZP_TEST_LOOP 	
+
+ZP_TEST_FINISH_JMP:
+	JMP 	ZP_TEST_FINISH
+
+ZP_ERROR:
+; So we have a bad bit (or more) - lets find the lowest broken bit and flash the screen for that
+; Either Y=1 and we have something like %11011111 so we need to find that '0'
+; OR Y=0 and we have something like %00100000 so we need to find the '1'
+; I think we could do something like a right shift until carry is set?
+; We should have the bad bits in A...
+	LDX 	#0 	; Bit position counter
+	CLC
+ZP_ERROR_TEST_BIT_LOOP:
+	LSR 							; Move bits Left - has a '1' ended up in the carry flag?
+	BCS		ZP_ERROR_SHOW_BIT 		; Carry set? Lets stop there then
+	INX 							; No carry set, try the next bit
+	CPX 	#8 						; All bits checked now?
+	BNE 	ZP_ERROR_TEST_BIT_LOOP 
+	JMP  	ZP_ERROR_SHOW_BIT 	; Shouldn't get here, but flash 8 times if it does...
+
+ZP_ERROR_SHOW_BIT:
+; X = Lowest Bad Bit
+	TXA
+; ZP error first nibble is 1000
+	SETSCREEN_WHITE()
+	DELAY(#$03)	
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	DELAY(#$03)	
+; Second nibble is the lowest bad bit number
+	TAX 	; Delays and flashing trash the top two bits of A so need to save it...
+	ASL		; Shift low nibble high
+	ASL
+	ASL
+	ASL
+
+	ASL
+	TXA 	; Restore no. to flash, should not affect carry
+	BCS 	ZP_ERROR_SHOW_BITNO1_1
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	JMP 	ZP_ERROR_SHOW_BITNO2
+ZP_ERROR_SHOW_BITNO1_1:
+	SETSCREEN_WHITE()
+	DELAY(#$03)	
+
+ZP_ERROR_SHOW_BITNO2:
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	TAX 	; Delays and flashing trash the top two bits of A so need to save it...
+	ASL		; Shift low nibble high
+	ASL
+	ASL
+	ASL
+	
+	ASL
+	ASL
+	TXA 	; Restore no. to flash, should not affect carry
+	BCS 	ZP_ERROR_SHOW_BITNO2_1
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	JMP 	ZP_ERROR_SHOW_BITNO3
+ZP_ERROR_SHOW_BITNO2_1:
+	SETSCREEN_WHITE()
+	DELAY(#$03)	
+
+ZP_ERROR_SHOW_BITNO3:
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	TAX 	; Delays and flashing trash the top two bits of A so need to save it...
+	ASL		; Shift low nibble high
+	ASL
+	ASL
+	ASL
+	
+	ASL
+	ASL
+	ASL
+	TXA 	; Restore no. to flash, should not affect carry
+	BCS 	ZP_ERROR_SHOW_BITNO3_1
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	JMP 	ZP_ERROR_SHOW_BITNO4
+ZP_ERROR_SHOW_BITNO3_1:
+	SETSCREEN_WHITE()
+	DELAY(#$03)	
+
+ZP_ERROR_SHOW_BITNO4:
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+	TAX 	; Delays and flashing trash the top two bits of A so need to save it...
+	ASL		; Shift low nibble high
+	ASL
+	ASL
+	ASL
+	
+	ASL
+	ASL
+	ASL
+	ASL
+	TXA 	; Restore no. to flash, should not affect carry
+	BCS 	ZP_ERROR_SHOW_BITNO4_1
+	SETSCREEN_WHITE()
+	DELAY(#$01)	
+	JMP 	ZP_ERROR_SHOW_BIT_DONE
+ZP_ERROR_SHOW_BITNO4_1:
+	SETSCREEN_WHITE()
+	DELAY(#$03)	
+
+ZP_ERROR_SHOW_BIT_DONE:
+	SETSCREEN_BLACK()
+	DELAY(#$03)	
+
+ZP_TEST_FINISH:
 
 ; 2. Test Stack RAM
 

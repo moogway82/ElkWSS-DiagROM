@@ -9,6 +9,7 @@
 ; DELAY(noxloops)
 ;
 ; noxloops = Number of times the X loop should go round, only 0, 1, 2 or 3 as this is OR'd to maintain 6bits of A reg
+; Trashes all Registers apart from first 6 bits of X? :)
 
 #define DELAY(noxloops) 	ROL : ROL : ORA 	noxloops : TAX : LDY 	#0 : LDA 	#0 : SBC 	#1 : .byt $D0,$FC : DEY : .byt $D0,$F7 : DEX : TXA : AND 	#%00000011 : .byt $D0,$EF : TXA : LSR : LSR 
 
