@@ -7,10 +7,11 @@ Going to try and make a simple Diag ROM in the vein of the ZX Spectrum/CPC Testi
 Just do some basic arithmetic operations and see if they work - this is a little silly as the CPU is unlikely to execute code if it’s faulty :)
 
 ### Zero Page RAM Test
-Write to the addresses we’ll need to use in the Zero page to do the other tests, maybe just 2-4 bytes?
+Write all ones and then all zeros to whole of the Zero page RAM locations (&0000 - &0FF). It will stop at first failure and report the failed bits.
 Once this has passed then we can use Zero page instructions (I think this is helpful to use 16-bit addresses?)
+
 ###  Stack RAM Test
-Write to all the stack?
+Write to all the stack.
 Once this is passed we can use Subroutines
 
 ### Full Memory Test
