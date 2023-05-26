@@ -10,7 +10,22 @@
 
 #include "macros.inc"
 
+; Zero Page Usage
+#define ZP0 	 $00 	; General Purpose ZP Var 0
+#define ZP1 	 $01 	; General Purpose ZP Var 1
+#define ZP2 	 $02 	; General Purpose ZP Var 2
+#define ZP3 	 $03 	; General Purpose ZP Var 3
+#define ZP4 	 $04 	; General Purpose ZP Var 4
+#define ZP5 	 $05 	; General Purpose ZP Var 5
+#define ZP6 	 $06 	; General Purpose ZP Var 6
+#define ZP7 	 $07 	; General Purpose ZP Var 7
+
+#define CHARPOSL $D8 	; contain the address of the top scan line of the current text character (Same as Acorn MOS, I think)
+#define CHARPOSH $D9
+
 * =	$F000
+
+#include "print.inc"
 
 RESET:
 
@@ -308,12 +323,9 @@ STACK_READ_LOOP:
 	TYA
 	JMP 	STACK_TEST_LOOP 	
 STACK_TEST_FINISH_JMP:
+	JMP 	RAM_TEST
 
 STACK_ERROR:
-; So we have a bad bit (or more) - lets find the lowest broken bit and flash the screen for that
-; Either Y=1 and we have something like %11011111 so we need to find that '0'
-; OR Y=0 and we have something like %00100000 so we need to find the '1'
-; I think we could do something like a right shift until carry is set?
 ; We should have the bad bits in A...
 	LDX 	#0 	; Bit position counter
 	CLC
@@ -328,7 +340,7 @@ STACK_ERROR_TEST_BIT_LOOP:
 STACK_ERROR_SHOW_BIT:
 ; X = Lowest Bad Bit
 	TXA
-; ZP error first nibble is 0010 '2'
+; Stack error first nibble is 0010 '2'
 	SETSCREEN_WHITE()
 	DELAY(#$01)	
 	SETSCREEN_BLACK()
@@ -348,8 +360,31 @@ STACK_ERROR_SHOW_BIT:
 	DELAY(#$03)	
 	JMP ZP_ERROR_SHOW_BIT2 		; This is the same now
 
+; We should be able to rely on the ZP and Stack so can use subroutines
 
+; ------------------------------------------------------------
 ; 3. Test All RAM
+; ------------------------------------------------------------
+
+RAM_TEST:
+	JSR 	INIT_SCREEN
+	LDA 	#"H"
+	JSR 	PRINT_CHAR
+	LDA 	#"e"
+	JSR 	PRINT_CHAR
+	LDA 	#"l"
+	JSR 	PRINT_CHAR
+	LDA 	#"l"
+	JSR 	PRINT_CHAR
+	LDA 	#"o"
+	JSR 	PRINT_CHAR
+	LDA 	#"!"
+	JSR 	PRINT_CHAR
+
+
+
+
+;	JSR 	UPPER_RAM_TEST
 
 ; 4. Test Interrupts (&FE00)
 
@@ -363,6 +398,9 @@ ISR:
 HALT:
 ; Do it all again so we don't end up in la-la-land
  	JMP 	HALT
+
+SETLOC($F900)
+#include "charset.inc"
 
 SETLOC($FFFA)
 
