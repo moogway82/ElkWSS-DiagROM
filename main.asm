@@ -8,7 +8,7 @@
 ;#define TestZPRAMFailure #%10000000 	; Dummy bits failed
 ;#define TestStackRAMFailure #%01000000 ; Dummy bits failed
 
-#include "macros.inc"
+
 
 ; Zero Page Usage
 #define ZP0 	 $00 	; General Purpose ZP Var 0
@@ -25,6 +25,11 @@
 
 #define CHARPOSL $D8 	; contain the address of the top scan line of the current text character (Same as Acorn MOS, I think)
 #define CHARPOSH $D9
+
+#define PREV_CHARPOSL 	$DA 
+#define PREV_CHARPOSH 	$DB 
+
+#include "macros.inc"
 
 * =	$F000
 
@@ -44,7 +49,7 @@ RESET:
 ; &FE07 - Miscellaneous control
 ; - b0=N/A
 ; - b12=01 Sound (on)
-; - b345=110 Mode 6
+; - b345=110 Mode 6 - Colours 2, Text 40x25
 ; - b6=0 Cassette Motor (off)
 ; - b7=0 Caps LED (off)
 	LDA 	#%00110000
@@ -377,6 +382,62 @@ RAM_TEST:
 	STA 	STRPTRH
 	JSR 	PRINT
 
+	LDA 	#$40
+	STA 	CHARPOSL
+	LDA 	#$61
+	STA 	CHARPOSH
+
+	LDA 	#<ZP_OK_STR
+	STA 	STRPTRL
+	LDA 	#>ZP_OK_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+	LDA 	#$80
+	STA 	CHARPOSL
+	LDA 	#$62
+	STA 	CHARPOSH
+
+	LDA 	#<STACK_OK_STR
+	STA 	STRPTRL
+	LDA 	#>STACK_OK_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+	LDA 	#$C0
+	STA 	CHARPOSL
+	LDA 	#$63
+	STA 	CHARPOSH
+
+	LDA 	#<RAM_STR
+	STA 	STRPTRL
+	LDA 	#>RAM_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+; Use PREV_CHARPOSL to print OK over "Testing..."
+	LDA 	CHARPOSL
+	STA 	PREV_CHARPOSL
+	LDA 	CHARPOSH
+	STA 	PREV_CHARPOSH
+
+	LDA 	#<TESTING_STR
+	STA 	STRPTRL
+	LDA 	#>TESTING_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+	DELAY(#$03)
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	DELAY(#$03)
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	DELAY(#$03)
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	
+
 
 
 
@@ -396,9 +457,11 @@ HALT:
  	JMP 	HALT
 
 CPU_OK_STR 		.asc "CPU: OK" : .byt $00
-ZP_OK_STR 		.asc "ZP RAM (0x00 - 0xFF): OK" : .byt $00
-STACK_OK_STR 	.asc "Stack RAM (0x100 - 0x1FF): OK" : .byt $00
-TESTING_RAM_STR .asc "Testing RAM..." : .byt $00
+ZP_OK_STR 		.asc "ZP RAM (0x00-0xFF): OK" : .byt $00
+STACK_OK_STR 	.asc "Stack RAM (0x100-0x1FF): OK" : .byt $00
+RAM_STR 		.asc "RAM (0x200-0x7FFF): " : .byt $00
+TESTING_STR 	.asc "Testing..." : .byt $00
+OK_STR 			.asc "OK" : .byt $00
 
 SETLOC($F900)
 #include "charset.inc"

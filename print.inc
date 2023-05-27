@@ -69,6 +69,9 @@ PRINT_CHAR:
 	PHA
 	LDA 	ZP0
 
+	CMP 	#$08
+	BEQ		PRINT_BACKSPACE
+
 	TAY
 ; First Byte of ASCII char is ASCII * 8 + FB00 = Start location. "A" (0x41) * 8 = 0x208 + FB00 = 0xFD08
 	LDA 	#0
@@ -103,7 +106,26 @@ PRINT_CHAR_LOOP:
 	LDA 	CHARPOSH
 	ADC 	#0
 	STA 	CHARPOSH
+	JMP 	PRINT_DONE
 
+PRINT_BACKSPACE:
+; Just move back a character and clear it out
+	SEC
+	LDA 	CHARPOSL
+	SBC 	#8
+	STA 	CHARPOSL
+	LDA 	CHARPOSH
+	SBC 	#0
+	STA 	CHARPOSH
+	LDY 	#0
+	LDA 	#0
+PRINT_BACKSPACE_LOOP:
+	STA 	($D8),Y
+	INY
+	CPY 	#8
+	BNE 	PRINT_BACKSPACE_LOOP
+	
+PRINT_DONE:
 	PLA 
 	TAY
 	RTS
@@ -125,6 +147,8 @@ PRINT_LOOP:
 	BNE 	PRINT_LOOP
 PRINT_END:
 	RTS
+
+
 
 
 
