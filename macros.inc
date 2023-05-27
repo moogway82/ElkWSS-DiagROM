@@ -78,3 +78,6 @@
 ;	STA 	$FE08
 ;	LDA 	#%00000000
 ;	STA 	$FE09
+
+;#define PRINT_STRING(thestring)		LDA 	#<thestring : STA 	STRPTRL : LDA 	#>thestring : STA 	STRPTRH : JSR 	PRINT
+

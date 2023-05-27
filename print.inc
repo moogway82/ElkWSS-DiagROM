@@ -57,11 +57,18 @@ INIT_SCREEN_FILL_VRAM_LOOP2:
 ; PRINT_CHAR
 ; 
 ; A = ASCII Character to Print at current char location
+; 
+; Trashed: A, Y. ZP0, ZP1
 ;
 ; - Copy over character bytes to screen memory
 ; ------------------------------------------------------------
 
 PRINT_CHAR:
+	STA 	ZP0
+	TYA 	
+	PHA
+	LDA 	ZP0
+
 	TAY
 ; First Byte of ASCII char is ASCII * 8 + FB00 = Start location. "A" (0x41) * 8 = 0x208 + FB00 = 0xFD08
 	LDA 	#0
@@ -96,6 +103,27 @@ PRINT_CHAR_LOOP:
 	LDA 	CHARPOSH
 	ADC 	#0
 	STA 	CHARPOSH
+
+	PLA 
+	TAY
+	RTS
+
+; ------------------------------------------------------------
+; PRINT
+; 
+; ZP STRPTRL $10 & ZP STRPTRL $11 - Pointer to the start of a string to print. Prints until 0x00 or 256 chars.
+; ------------------------------------------------------------
+
+PRINT:
+	LDY 	#0
+PRINT_LOOP:
+	LDA 	($10),Y
+	CMP 	#$00
+	BEQ 	PRINT_END
+	JSR 	PRINT_CHAR
+	INY 
+	BNE 	PRINT_LOOP
+PRINT_END:
 	RTS
 
 

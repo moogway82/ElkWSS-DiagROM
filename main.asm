@@ -20,6 +20,9 @@
 #define ZP6 	 $06 	; General Purpose ZP Var 6
 #define ZP7 	 $07 	; General Purpose ZP Var 7
 
+#define STRPTRL 	 $10 	; Print string Pointer LSB - address of a string to print
+#define STRPTRH 	 $11 	; Print string Pointer MSB - address of a string to print
+
 #define CHARPOSL $D8 	; contain the address of the top scan line of the current text character (Same as Acorn MOS, I think)
 #define CHARPOSH $D9
 
@@ -368,18 +371,11 @@ STACK_ERROR_SHOW_BIT:
 
 RAM_TEST:
 	JSR 	INIT_SCREEN
-	LDA 	#"H"
-	JSR 	PRINT_CHAR
-	LDA 	#"e"
-	JSR 	PRINT_CHAR
-	LDA 	#"l"
-	JSR 	PRINT_CHAR
-	LDA 	#"l"
-	JSR 	PRINT_CHAR
-	LDA 	#"o"
-	JSR 	PRINT_CHAR
-	LDA 	#"!"
-	JSR 	PRINT_CHAR
+	LDA 	#<CPU_OK_STR
+	STA 	STRPTRL
+	LDA 	#>CPU_OK_STR
+	STA 	STRPTRH
+	JSR 	PRINT
 
 
 
@@ -398,6 +394,11 @@ ISR:
 HALT:
 ; Do it all again so we don't end up in la-la-land
  	JMP 	HALT
+
+CPU_OK_STR 		.asc "CPU: OK" : .byt $00
+ZP_OK_STR 		.asc "ZP RAM (0x00 - 0xFF): OK" : .byt $00
+STACK_OK_STR 	.asc "Stack RAM (0x100 - 0x1FF): OK" : .byt $00
+TESTING_RAM_STR .asc "Testing RAM..." : .byt $00
 
 SETLOC($F900)
 #include "charset.inc"
