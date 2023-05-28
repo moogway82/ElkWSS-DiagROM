@@ -148,6 +148,42 @@ PRINT_LOOP:
 PRINT_END:
 	RTS
 
+; ------------------------------------------------------------
+; PRINT_HEX_BYTE
+; ------------------------------------------------------------
+;
+
+
+PRINT_HEX_BYTE:
+	PHA
+	PHA
+	LSR
+	LSR
+	LSR
+	LSR
+	JSR 	PRINT_HEX_NIBBLE
+	PLA 
+	JSR 	PRINT_HEX_NIBBLE
+	PLA
+	RTS
+
+; ------------------------------------------------------------
+; PRINT_HEX_NIBBLE
+; ------------------------------------------------------------
+; 0-9 = 30-39 (+ 0x30)
+; A-F = 41-46 (+ 0x37)
+
+PRINT_HEX_NIBBLE:
+	AND 	#$0F 
+	CLC
+	ADC 	#"0" 	; Add value to ASCII code for 0
+	CMP 	#$3A 	; If the code is > '9' then must be A-F
+	BMI 	PRINT_HEX_NIBBLE_DONE
+	CLC
+	ADC 	#$7
+PRINT_HEX_NIBBLE_DONE:
+	JSR 	PRINT_CHAR
+	RTS
 
 
 

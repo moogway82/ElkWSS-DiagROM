@@ -7,6 +7,7 @@
 ;#define TestCPUFailure #50 			; Dummy value to compare to Register bits
 ;#define TestZPRAMFailure #%10000000 	; Dummy bits failed
 ;#define TestStackRAMFailure #%01000000 ; Dummy bits failed
+;#define TestMainRAMFailure #%01010101 	
 
 
 
@@ -418,50 +419,100 @@ RAM_TEST:
 	STA 	STRPTRH
 	JSR 	PRINT
 
-; Use PREV_CHARPOSL to print OK over "Testing..."
-	LDA 	CHARPOSL
-	STA 	PREV_CHARPOSL
-	LDA 	CHARPOSH
-	STA 	PREV_CHARPOSH
-
-	LDA 	#<TESTING_STR
-	STA 	STRPTRL
-	LDA 	#>TESTING_STR
-	STA 	STRPTRH
-	JSR 	PRINT
-
-	DELAY(#$03)
-
-	LDA 	PREV_CHARPOSL
-	STA 	CHARPOSL
-	LDA 	PREV_CHARPOSH
-	STA 	CHARPOSH
-	
+; I'm going to store every value in every address in RAM above 0x200!!
+	LDY 	#$00
+	LDA  	#$02
+	STA 	RAMTESTH
+	JSR 	PRINT_HEX_BYTE
+	LDA 	#$00
+	STA 	RAMTESTL
+; Write to all locations in page
+RAMTESTLOOP_WRITE: 
+	STA 	($DC), Y
+	INY 
+	BNE 	RAMTESTLOOP_WRITE
+; Read back from all locations in page
+RAMTESTLOOP_READ:
+	STA 	ZP3
+	LDA 	($DC), Y
+#ifdef TestMainRAMFailure
+	CPY 	TestMainRAMFailure
+	BNE 	TestMainRAMFailure_CarryOn
+	LDA 	TestMainRAMFailure
+TestMainRAMFailure_CarryOn:
+#endif
+	CMP 	ZP3
+	BNE 	RAMTEST_ERROR
+	INY
+	BNE 	RAMTESTLOOP_READ
+	CLC 
+	ADC 	#1
+	BNE 	RAMTESTLOOP_WRITE
+; Update the Page counter
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	INC 	RAMTESTH
+	LDA 	RAMTESTH
+	JSR 	PRINT_HEX_BYTE
+	CMP 	#$80
+	BNE 	RAMTESTLOOP_WRITE
+RAMTEST_DONE:
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	LDA 	#$08
+	JSR 	PRINT_CHAR
 	LDA 	#<OK_STR
 	STA 	STRPTRL
 	LDA 	#>OK_STR
 	STA 	STRPTRH
 	JSR 	PRINT
+	DELAY(#$03)	
+	JMP 	RAM_TEST
 
-; I'm going to store every value in every address in RAM above 0x200!!
-	LDY 	#$00
-	LDA  	#$02
-	STA 	RAMTESTH
+RAMTEST_ERROR:
+	STA 	ZP4
+	STY 	ZP5
+	LDA 	#<ERROR_STR
+	STA 	STRPTRL
+	LDA 	#>ERROR_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+	LDA 	#$65
+	STA 	CHARPOSH
 	LDA 	#$00
-	STA 	RAMTESTL
-RAMTESTLOOP: 
-	STA 	($DC), Y
-	INY 
-	BNE 	RAMTESTLOOP
-	CLC 
-	ADC 	#1
-	BNE 	RAMTESTLOOP
-	
+	STA 	CHARPOSL
 
+	LDA 	#<AT_STR
+	STA 	STRPTRL
+	LDA 	#>AT_STR
+	STA 	STRPTRH
+	JSR 	PRINT
 
+	LDA 	RAMTESTH
+	JSR 	PRINT_HEX_BYTE
+	LDA 	ZP5
+	JSR 	PRINT_HEX_BYTE
 
+	LDA 	#<EXP_STR
+	STA 	STRPTRL
+	LDA 	#>EXP_STR
+	STA 	STRPTRH
+	JSR 	PRINT
 
-;	JSR 	UPPER_RAM_TEST
+	LDA 	ZP3
+	JSR 	PRINT_HEX_BYTE
+
+	LDA 	#<GOT_STR
+	STA 	STRPTRL
+	LDA 	#>GOT_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+	LDA 	ZP4 
+	JSR 	PRINT_HEX_BYTE
 
 ; 4. Test Interrupts (&FE00)
 
@@ -479,9 +530,12 @@ HALT:
 CPU_OK_STR 		.asc "CPU: OK" : .byt $00
 ZP_OK_STR 		.asc "ZP RAM (0x00-0xFF): OK" : .byt $00
 STACK_OK_STR 	.asc "Stack RAM (0x100-0x1FF): OK" : .byt $00
-RAM_STR 		.asc "RAM (0x200-0x7FFF): " : .byt $00
-TESTING_STR 	.asc "Testing..." : .byt $00
+RAM_STR 		.asc "Main RAM (0x200-0x7FFF): " : .byt $00
 OK_STR 			.asc "OK" : .byt $00
+ERROR_STR 		.asc "ERROR" : .byt $00
+AT_STR 			.asc "- At Addr: " : .byt $00
+EXP_STR 		.asc ", Expected: " : .byt $00
+GOT_STR 		.asc ", Got: " : .byt $00
 
 SETLOC($F900)
 #include "charset.inc"
