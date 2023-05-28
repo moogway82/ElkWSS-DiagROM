@@ -29,6 +29,9 @@
 #define PREV_CHARPOSL 	$DA 
 #define PREV_CHARPOSH 	$DB 
 
+#define RAMTESTL 	$DC  
+#define RAMTESTH 	$DD 
+
 #include "macros.inc"
 
 * =	$F000
@@ -428,14 +431,31 @@ RAM_TEST:
 	JSR 	PRINT
 
 	DELAY(#$03)
-	LDA 	#$08
-	JSR 	PRINT_CHAR
-	DELAY(#$03)
-	LDA 	#$08
-	JSR 	PRINT_CHAR
-	DELAY(#$03)
-	LDA 	#$08
-	JSR 	PRINT_CHAR
+
+	LDA 	PREV_CHARPOSL
+	STA 	CHARPOSL
+	LDA 	PREV_CHARPOSH
+	STA 	CHARPOSH
+	
+	LDA 	#<OK_STR
+	STA 	STRPTRL
+	LDA 	#>OK_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+
+; I'm going to store every value in every address in RAM above 0x200!!
+	LDY 	#$00
+	LDA  	#$02
+	STA 	RAMTESTH
+	LDA 	#$00
+	STA 	RAMTESTL
+RAMTESTLOOP: 
+	STA 	($DC), Y
+	INY 
+	BNE 	RAMTESTLOOP
+	CLC 
+	ADC 	#1
+	BNE 	RAMTESTLOOP
 	
 
 
