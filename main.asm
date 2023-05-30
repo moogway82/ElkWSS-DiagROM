@@ -33,6 +33,9 @@
 #define RAMTESTL 	$DC  
 #define RAMTESTH 	$DD 
 
+#define RAMTEST_ERROR_LIST_POSL 	$DE
+#define RAMTEST_ERROR_LIST_POSH 	$DF
+
 #include "macros.inc"
 
 * =	$F000
@@ -420,6 +423,10 @@ RAM_TEST:
 	JSR 	PRINT
 
 ; I'm going to store every value in every address in RAM above 0x200!!
+	LDA 	#$65
+	STA 	RAMTEST_ERROR_LIST_POSH
+	LDA 	#$00
+	STA 	RAMTEST_ERROR_LIST_POSL
 	LDY 	#$00
 	LDA  	#$02
 	STA 	RAMTESTH
@@ -435,14 +442,20 @@ RAMTESTLOOP_WRITE:
 RAMTESTLOOP_READ:
 	STA 	ZP3
 	LDA 	($DC), Y
+
 #ifdef TestMainRAMFailure
 	CPY 	TestMainRAMFailure
 	BNE 	TestMainRAMFailure_CarryOn
 	LDA 	TestMainRAMFailure
 TestMainRAMFailure_CarryOn:
 #endif
+
 	CMP 	ZP3
 	BNE 	RAMTEST_ERROR
+	JMP 	RAMTEST_CARRYON
+RAMTEST_ERROR:
+	JSR 	RAMTEST_PRINT_ERROR
+RAMTEST_CARRYON:
 	INY
 	BNE 	RAMTESTLOOP_READ
 	CLC 
@@ -471,19 +484,19 @@ RAMTEST_DONE:
 	DELAY(#$03)	
 	JMP 	RAM_TEST
 
-RAMTEST_ERROR:
-	STA 	ZP4
-	STY 	ZP5
-	LDA 	#<ERROR_STR
-	STA 	STRPTRL
-	LDA 	#>ERROR_STR
-	STA 	STRPTRH
-	JSR 	PRINT
+RAMTEST_PRINT_ERROR:
+	STA 	ZP4 	; Failed Bit
+	STY 	ZP5 	; Failed offset
 
-	LDA 	#$65
-	STA 	CHARPOSH
-	LDA 	#$00
+	LDA 	CHARPOSL
+	STA 	PREV_CHARPOSL
+	LDA 	CHARPOSH
+	STA 	PREV_CHARPOSH
+
+	LDA 	RAMTEST_ERROR_LIST_POSL
 	STA 	CHARPOSL
+	LDA 	RAMTEST_ERROR_LIST_POSH
+	STA 	CHARPOSH
 
 	LDA 	#<AT_STR
 	STA 	STRPTRL
@@ -514,6 +527,33 @@ RAMTEST_ERROR:
 	LDA 	ZP4 
 	JSR 	PRINT_HEX_BYTE
 
+; Update error list to the next line
+	LDA 	RAMTEST_ERROR_LIST_POSH
+	CMP 	#$7F
+	BNE 	RAMTEST_ERROR_INC_LIST_POS
+	LDA 	#$65
+	STA 	RAMTEST_ERROR_LIST_POSH
+	LDA 	#$00
+	STA 	RAMTEST_ERROR_LIST_POSL
+	JMP 	RAMTEST_PRINT_ERROR_DONE
+
+RAMTEST_ERROR_INC_LIST_POS:
+	CLC
+	LDA 	RAMTEST_ERROR_LIST_POSL
+	ADC 	#$40
+	STA 	RAMTEST_ERROR_LIST_POSL
+	LDA 	RAMTEST_ERROR_LIST_POSH
+	ADC 	#$1
+	STA 	RAMTEST_ERROR_LIST_POSH
+
+RAMTEST_PRINT_ERROR_DONE:
+
+	LDY 	ZP5
+	LDA 	ZP4
+
+	RTS
+
+
 ; 4. Test Interrupts (&FE00)
 
 ; 5. Test ...			
@@ -533,9 +573,9 @@ STACK_OK_STR 	.asc "Stack RAM (0x100-0x1FF): OK" : .byt $00
 RAM_STR 		.asc "Main RAM (0x200-0x7FFF): " : .byt $00
 OK_STR 			.asc "OK" : .byt $00
 ERROR_STR 		.asc "ERROR" : .byt $00
-AT_STR 			.asc "- At Addr: " : .byt $00
-EXP_STR 		.asc ", Expected: " : .byt $00
-GOT_STR 		.asc ", Got: " : .byt $00
+AT_STR 			.asc "-Addr: " : .byt $00
+EXP_STR 		.asc ", Exp.: " : .byt $00
+GOT_STR 		.asc ", Act.: " : .byt $00
 
 SETLOC($F900)
 #include "charset.inc"

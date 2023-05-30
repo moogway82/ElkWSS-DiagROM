@@ -1,5 +1,5 @@
 # Elk Diagnostics ROM
-Going to try and make a simple Diag ROM in the vein of the ZX Spectrum/CPC Testing ROM. There is an Oric one which is a good example to follow as its simple and 6502 based.
+A simple Diag ROM in the vein of the ZX Spectrum/CPC Testing/Oric diagnostic ROMs. 
 
 ## Tests
 
