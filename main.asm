@@ -529,8 +529,10 @@ RAMTEST_PRINT_ERROR:
 
 ; Update error list to the next line
 	LDA 	RAMTEST_ERROR_LIST_POSH
-	CMP 	#$7F
+	CMP 	#$7E
 	BNE 	RAMTEST_ERROR_INC_LIST_POS
+; Be good if it printed a message and said 'screen full, press space to continue'
+	JSR 	SPACE_TO_CONT
 	LDA 	#$65
 	STA 	RAMTEST_ERROR_LIST_POSH
 	LDA 	#$00
@@ -548,11 +550,30 @@ RAMTEST_ERROR_INC_LIST_POS:
 
 RAMTEST_PRINT_ERROR_DONE:
 
+	LDA 	PREV_CHARPOSL
+	STA 	CHARPOSL
+	LDA 	PREV_CHARPOSH
+	STA 	CHARPOSH
+
 	LDY 	ZP5
 	LDA 	ZP4
 
 	RTS
 
+SPACE_TO_CONT:
+	LDA 	#<SPACE_CONT_STR
+	STA 	STRPTRL
+	LDA 	#>SPACE_CONT_STR
+	STA 	STRPTRH
+	JSR 	PRINT
+SPACE_TO_CONT_LOOP:
+	LDA 	#%00001000
+	STA 	$FE05
+	LDA 	$BFFE
+	AND 	#$08
+	BEQ 	SPACE_TO_CONT_LOOP
+
+	RTS
 
 ; 4. Test Interrupts (&FE00)
 
@@ -573,9 +594,10 @@ STACK_OK_STR 	.asc "Stack RAM (0x100-0x1FF): OK" : .byt $00
 RAM_STR 		.asc "Main RAM (0x200-0x7FFF): " : .byt $00
 OK_STR 			.asc "OK" : .byt $00
 ERROR_STR 		.asc "ERROR" : .byt $00
-AT_STR 			.asc "-Addr: " : .byt $00
-EXP_STR 		.asc ", Exp.: " : .byt $00
-GOT_STR 		.asc ", Act.: " : .byt $00
+AT_STR 			.asc ">Addr: " : .byt $00
+EXP_STR 		.asc " Exp: " : .byt $00
+GOT_STR 		.asc " Act: " : .byt $00
+SPACE_CONT_STR 	.asc " SPC To Cont." : .byt $00
 
 SETLOC($F900)
 #include "charset.inc"
