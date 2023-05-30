@@ -1,4 +1,4 @@
-# Elk Diagnostics ROM
+# Elk "Why-So-Sad" Diagnostics ROM
 A simple Diag ROM in the vein of the ZX Spectrum/CPC Testing/Oric diagnostic ROMs. 
 
 ## Tests
