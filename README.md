@@ -15,7 +15,7 @@ Write to all the stack. Failure code only shows the lowest failed bit.
 Once this is passed we can use Subroutines
 
 ### 3. Full Memory Test
-Write & Read back main memory from 0x200 - 0x7FFF
+Write & Read back main memory from 0x200 - 0x7FFF. It goes through values from 0x00 to 0xFF and write each to all addresses in a Page.
 
 ### 4. Interrupt tests [not yet implemented]
 Not sure, maybe enable one at a time and see if we can get them to interrupt the CPU? Will need to set up a ISR

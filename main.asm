@@ -7,7 +7,7 @@
 ;#define TestCPUFailure #50 			; Dummy value to compare to Register bits
 ;#define TestZPRAMFailure #%10000000 	; Dummy bits failed
 ;#define TestStackRAMFailure #%01000000 ; Dummy bits failed
-#define TestMainRAMFailure #%01010101 	
+;#define TestMainRAMFailure #%01010101 	
 
 
 
