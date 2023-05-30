@@ -47,9 +47,11 @@ RESET:
 ; ------------------------------------------------------------
 ; ** Init
 ; ------------------------------------------------------------
-; * Disable Interrupts
+; * Disable Interrupts but clear other Flags
 	SEI
 	CLD
+	CLC
+	CLV
 
 ; * Set Screen mode
 ;
@@ -87,12 +89,14 @@ RESET:
 	LDA 	#0 			 
 	BNE 	CPU_ERROR	; Z should be 1
 	BMI 	CPU_ERROR 	; N should be 0
+	CLC
 	ADC		#1
 	BEQ		CPU_ERROR 	; Z should be 0
 	BCS 	CPU_ERROR 	; C should be 0
 	BMI 	CPU_ERROR	; N should be 0
 	BVS 	CPU_ERROR 	; V should be 0
-	SBC	 	#$80 		; N set, V set
+	SEC
+	SBC	 	#$81 		; N set, V set
 	BPL 	CPU_ERROR 	; N should be 1
 	BVC 	CPU_ERROR 	; V should be 1
 	ASL 	 			; .V.IZC
