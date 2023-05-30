@@ -7,7 +7,7 @@
 ;#define TestCPUFailure #50 			; Dummy value to compare to Register bits
 ;#define TestZPRAMFailure #%10000000 	; Dummy bits failed
 ;#define TestStackRAMFailure #%01000000 ; Dummy bits failed
-;#define TestMainRAMFailure #%01010101 	
+#define TestMainRAMFailure #%01010101 	
 
 
 
@@ -38,7 +38,7 @@
 
 #include "macros.inc"
 
-* =	$F000
+* =	$C000
 
 #include "print.inc"
 
@@ -576,6 +576,12 @@ SPACE_TO_CONT_LOOP:
 	LDA 	$BFFE
 	AND 	#$08
 	BEQ 	SPACE_TO_CONT_LOOP
+	LDX 	#13
+SPACE_TO_CONT_DEL_STR:
+	LDA 	#$08
+	JSR 	PRINT_CHAR
+	DEX
+	BNE 	SPACE_TO_CONT_DEL_STR
 
 	RTS
 
@@ -592,18 +598,20 @@ HALT:
 ; Do it all again so we don't end up in la-la-land
  	JMP 	HALT
 
-CPU_OK_STR 		.asc "CPU: OK" : .byt $00
+
+CPU_OK_STR 		.asc "CPU: OK                 = Elk WSS v0.1 =" : .byt $00
 ZP_OK_STR 		.asc "ZP RAM (0x00-0xFF): OK" : .byt $00
 STACK_OK_STR 	.asc "Stack RAM (0x100-0x1FF): OK" : .byt $00
 RAM_STR 		.asc "Main RAM (0x200-0x7FFF): " : .byt $00
 OK_STR 			.asc "OK" : .byt $00
 ERROR_STR 		.asc "ERROR" : .byt $00
-AT_STR 			.asc ">Addr: " : .byt $00
+AT_STR 			.asc " Addr: " : .byt $00
 EXP_STR 		.asc " Exp: " : .byt $00
 GOT_STR 		.asc " Act: " : .byt $00
 SPACE_CONT_STR 	.asc " SPC To Cont." : .byt $00
 
 SETLOC($F900)
+
 #include "charset.inc"
 
 SETLOC($FFFA)
